@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>全螢幕智慧語音課表</title>
+<style>
+    :root {
+        --primary-bg: #fdfbf7;
+        --header-bg: #4a90e2;
+        --header-text: #ffffff;
+        --border-color: #e0e0e0;
+        --hover-color: #fff8e1;
+        --highlight-bg: #fffbe6;
+        --highlight-header: #f5a623;
+        --highlight-border: #f5a623;
+    }
+
+    /* 全局設定：強制不捲動 */
+    html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden; /* 隱藏捲軸 */
+        font-family: "Microsoft JhengHei", "Heiti TC", sans-serif;
+        background-color: #f4f4f4;
+    }
+
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 1vh 1vw;
+        box-sizing: border-box;
+    }
+
+    /* 主佈局 */
+    .main-layout {
+        display: flex;
+        gap: 1vw;
+        width: 100%;
+        height: 98vh;
+        max-width: 100%;
+    }
+
+    /* --- 左側課表區域 --- */
+    .schedule-container {
+        flex: 3.5;
+        background-color: var(--primary-bg);
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .schedule-header {
+        background-color: var(--header-bg);
+        color: var(--header-text);
+        padding: 1vh;
+        text-align: center;
+        flex-shrink: 0;
+    }
+
+    .schedule-header h1 { margin: 0; font-size: 2.5vh; }
+
+    table {
+        width: 100%;
+        height: 100%;
+        border-collapse: collapse;
+        text-align: center;
+        table-layout: fixed;
+    }
+
+    th, td {
+        border-bottom: 3px solid var(--border-color);
+        border-right: 1px solid var(--border-color);
+        font-size: 2.9vh;
+        vertical-align: middle;
+        word-wrap: break-word;
+        padding: 0px;
+        cursor: pointer;
+    }
+    
+    tr { height: 10%; } 
+    th:first-child { width: 3%; }
+    th:nth-child(2) { width: 8%; }
+
+    thead th {
+        background-color: #f8f9fa;
+        color: #555;
+        font-weight: bold;
+        height: 6%;
+    }
+
+    .period-col { font-weight: bold; color: #4a90e2; background-color: #fafafa; }
+    .time-col { font-size: 1.5vh; color: #888; background-color: #fafafa; }
+    
+    td:active { background-color: #ffe082 !important; transform: scale(0.98); }
+    th.current-day { background-color: var(--highlight-header) !important; color: white !important; }
+    td.current-day { background-color: var(--highlight-bg) !important; font-weight: bold; color: #333; }
+
+    /* --- 右側資訊欄 --- */
+    .sidebar {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0.1vh;
+        height: 100%;
+    }
+
+    .widget {
+        background: white;
+        border-radius: 12px;
+        padding: 1vh;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* 重新分配比例 */
+    .calendar-widget { flex: 0.5; justify-content: space-evenly; }
+    .dynalist-widget { flex: 3; padding: 0vh; } 
+    .music-widget { flex: 1.2; }
+
+    /* 日曆與時鐘整合區塊樣式 */
+    .cal-header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+        width: 100%;
+    }
+    .cal-info {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .cal-month { font-size: 1.8vh; color: #888; }
+    .cal-date { font-size: 4.5vh; font-weight: bold; color: #333; line-height: 1; margin: 0.5vh 0; }
+    .cal-day { font-size: 2vh; color: var(--header-bg); font-weight: bold; background: #eef6ff; padding: 0.4vh 1.5vh; border-radius: 20px;}
+
+    .digital-clock {
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 3.5vh;
+        font-weight: bold;
+        color: #333;
+        background: #f0f0f0;
+        padding: 0.8vh 1.5vh;
+        border-radius: 8px;
+    }
+
+    .clock-face {
+        width: 17vh;
+        height: 17vh;
+        border: .6vh solid #333;
+        border-radius: 50%;
+        position: relative;
+        background: white;
+    }
+    .clock-number {
+        position: absolute; width: 100%; height: 100%; text-align: center; 
+        font-weight: bold; font-size: 1.8vh; color: #333;
+    }
+    .hand { position: absolute; bottom: 50%; left: 50%; transform-origin: bottom; background: #333; transform: translateX(-50%); z-index: 2; border-radius: 4px;}
+    .hour-hand { width: 0.6vh; height: 4.5vh; }
+    .min-hand { width: 0.4vh; height: 6.5vh; background: #666; }
+    .sec-hand { width: 0.2vh; height: 7.5vh; background: red; z-index: 3;}
+    .center-dot { width: 1.2vh; height: 1.2vh; background: #333; border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 4; position: absolute;}
+
+    /* 外部網頁與音樂樣式 */
+    .dynalist-widget iframe { width: 100%; height: 100%; border-radius: 2px; border: none; }
+    .music-widget iframe { width: 100%; height: 100%; border-radius: 8px; border: none; }
+
+    /* --- 變暗遮罩與按鈕樣式 --- */
+    
+    /* 懸浮按鈕 */
+    .dimmer-btn {
+        position: fixed;
+        bottom: 2vh;
+        right: 2vh;
+        width: 6vh;
+        height: 6vh;
+        border-radius: 50%;
+        background-color: #333;
+        color: white;
+        border: none;
+        font-size: 3vh;
+        cursor: pointer;
+        z-index: 10000; /* 最上層 */
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.2s;
+    }
+    .dimmer-btn:hover { transform: scale(1.1); }
+
+    /* 全螢幕遮罩 */
+    #dimmer-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.85); /* 85% 黑 */
+        z-index: 9999; /* 比按鈕低，但比內容高 */
+        opacity: 0; /* 預設隱藏 */
+        pointer-events: none; /* 隱藏時允許點擊穿透 */
+        transition: opacity 0.5s ease;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #555;
+        font-size: 3vh;
+        user-select: none;
+    }
+    
+    /* 啟動變暗模式的樣式 */
+    #dimmer-overlay.active {
+        opacity: 1;
+        pointer-events: all; /* 啟動後攔截點擊 */
+    }
+
+    /* --- 菜單按鈕與彈窗樣式 --- */
+    .menu-btn-group {
+        display: inline-block;
+        margin-left: 3vh;
+    }
+    .menu-btn {
+        background-color: #fff;
+        color: var(--header-bg);
+        border: 2px solid var(--header-bg);
+        padding: 0.5vh 1.5vh;
+        border-radius: 20px;
+        font-size: 2vh;
+        font-weight: bold;
+        cursor: pointer;
+        margin: 0 0.5vh;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        transition: all 0.2s;
+    }
+    .menu-btn:hover {
+        background-color: var(--header-bg);
+        color: white;
+    }
+    .menu-btn:active {
+        transform: scale(0.95);
+    }
+
+    /* 彈窗遮罩 */
+    .modal-overlay {
+        display: none; /* 預設隱藏 */
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 10001; /* 必須比 dimmer 高 */
+        justify-content: center;
+        align-items: center;
+        backdrop-filter: blur(3px);
+    }
+    
+    /* 彈窗內容區塊 */
+    .modal-content {
+        background: white;
+        width: 85vw;
+        height: 85vh;
+        border-radius: 12px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        animation: modalFadeIn 0.3s ease-out;
+    }
+
+    @keyframes modalFadeIn {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .modal-header {
+        background-color: var(--highlight-header);
+        color: white;
+        padding: 1.5vh 2vw;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 2.5vh;
+        font-weight: bold;
+    }
+
+    .close-btn {
+        cursor: pointer;
+        font-size: 4vh;
+        line-height: 1;
+    }
+    .close-btn:hover { color: #ffe082; }
+
+    .modal-body {
+        flex: 1;
+        padding: 0;
+        background: #f9f9f9;
+    }
+    
+    .modal-body iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+    }
+
+</style>
+</head>
+<body>
+
+<div id="dimmer-overlay" onclick="toggleDimmer()">
+    點擊畫面喚醒...
+</div>
+
+<button class="dimmer-btn" onclick="toggleDimmer()" title="午休/專注模式">🌙</button>
+
+<div class="modal-overlay" id="menuModal" onclick="closeMenu(event)">
+    <div class="modal-content" onclick="event.stopPropagation()"> <div class="modal-header">
+            <span id="modalTitle">營養午餐菜單</span>
+            <span class="close-btn" onclick="closeMenu(event)">&times;</span>
+        </div>
+        <div class="modal-body">
+            <iframe id="menuIframe"></iframe>
+        </div>
+    </div>
+</div>
+
+<div class="main-layout">
+    <div class="schedule-container">
+        <div class="schedule-header">
+            <h1>高職部101班 課程表</h1>
+        </div>
+        <table id="scheduleTable">
+            <thead>
+                <tr>
+                    <th>節次</th>
+                    <th class="time-col">時間</th>
+                    <th>週一</th>
+                    <th>週二</th>
+                    <th>週三</th>
+                    <th>週四</th>
+                    <th>週五</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="period-col">1</td>
+                    <td class="time-col">08:20-09:05</td>
+                    <td>數學</td>
+                    <td>語文</td>
+                    <td>服務導論</td>
+                    <td>週會</td>
+                    <td>生活管理</td>
+                </tr>
+                <tr>
+                    <td class="period-col">2</td>
+                    <td class="time-col">09:15-10:00</td>
+                    <td>數學</td>
+                    <td>語文</td>
+                    <td>服務導論</td>
+                    <td>健康護理</td>
+                    <td>生活管理</td>
+                </tr>
+                <tr>
+                    <td class="period-col">3</td>
+                    <td class="time-col">10:10-11:05</td>
+                    <td>社會</td>
+                    <td>烘焙概論</td>
+                    <td>汽車美容<br>植物栽培</td>
+                    <td>生活管理<br>特色課程</td>
+                    <td>體育⚾</td>
+                </tr>
+                <tr>
+                    <td class="period-col">4</td>
+                    <td class="time-col">11:05-11:50</td>
+                    <td>社會</td>
+                    <td>烘焙概論</td>
+                    <td>汽車美容<br>植物栽培</td>
+                    <td>生活管理<br>特色課程</td>
+                    <td>體育⚾</td>
+                </tr>
+                <tr class="break-row">
+                    <td colspan="7">
+                        🍱 午餐 / 💤 午休
+                        <div class="menu-btn-group">
+                            <button class="menu-btn" onclick="openMenu(event, '3')">3月菜單</button>
+                            <button class="menu-btn" onclick="openMenu(event, '4')">4月菜單</button>
+                            <button class="menu-btn" onclick="openMenu(event, '5')">5月菜單</button>
+                            <button class="menu-btn" onclick="openMenu(event, '6')">6月菜單</button>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="period-col">5</td>
+                    <td class="time-col">13:20-14:05</td>
+                    <td>生活用品整理</td>
+                    <td>基礎速食實作</td>
+                    <td>生活營養學</td>
+                    <td>社團</td>
+                    <td>基礎清潔實作</td>
+                </tr>
+                <tr>
+                    <td class="period-col">6</td>
+                    <td class="time-col">14:10-14:55</td>
+                    <td>生活用品整理</td>
+                    <td>基礎速食實作</td>
+                    <td>生活營養學</td>
+                    <td>社團</td>
+                    <td>基礎清潔實作</td>
+                </tr>
+                <tr>
+                    <td class="period-col">7</td>
+                    <td class="time-col">15:05-15:50</td>
+                    <td>生活用品整理</td>
+                    <td>基礎速食實作</td>
+                    <td>生活營養學</td>
+                    <td>語文</td>
+                    <td>基礎清潔實作</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="sidebar">
+        <div class="widget calendar-widget">
+            <div class="cal-header-row">
+                <div class="cal-info">
+                    <div class="cal-month" id="calMonth">12月</div>
+                  <div class="cal-date" id="calDate">31</div>
+                    <div class="cal-day" id="calDay">星期三</div>
+                </div>
+                <div class="digital-clock" id="digitalClock">00:00:00</div>
+            </div>
+            
+            <div class="clock-face" id="analogClock">
+                <div class="center-dot"></div>
+                <div class="hand hour-hand" id="hourHand"></div>
+                <div class="hand min-hand" id="minHand"></div>
+                <div class="hand sec-hand" id="secHand"></div>
+            </div>
+        </div>
+
+        <div class="widget dynalist-widget">
+            <iframe 
+                src="https://dynalist.io/d/mz2tZxczOIgJgoDpwBhpyicf#z=f0DqFBD-DfCrMUExmwCPjNFg" 
+                title="Dynalist" 
+                allowfullscreen>
+            </iframe>
+        </div>
+
+        <div class="widget music-widget">
+            <iframe 
+                src="https://www.youtube.com/embed/videoseries?list=PL73NRWQl0Tm0qYgcgl0L9-2BNNMxqRqs4&autoplay=1&loop=1" 
+                title="YouTube music player" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                allowfullscreen>
+            </iframe>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- 儲存菜單的 HTML 字串 ---
+    const marchMenuStr = `<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><style> body { font-family: "Microsoft JhengHei", sans-serif; } table { border-collapse: collapse; width: 100%; text-align: center; font-size: 14px; } td { border: 1px solid black; padding: 6px 4px; } </style></head><body><table><tbody><tr><td>3/2</td><td>一</td><td>薏仁飯</td><td>薑汁燒肉</td><td>元氣蒸蛋</td><td>有機高麗菜</td><td>結頭菜虱目魚丸湯</td><td>水果</td><td>4.0</td><td>3.5</td><td>1.4</td><td>2.6</td><td>1.0</td><td></td><td>754.5</td></tr><tr><td>3</td><td>二</td><td>南瓜飯</td><td>和風燒雞</td><td>田園什錦</td><td>有機味美菜</td><td>番茄玉米黃豆芽<br>排骨湯</td><td></td><td>3.9</td><td>3.5</td><td>2.1</td><td>2.6</td><td></td><td></td><td>705.0</td></tr><tr><td>4</td><td>三</td><td>燕麥飯</td><td>黃瓜肉片</td><td>胡麻菠菜</td><td>TAP福山萵苣</td><td>味噌豆腐湯</td><td>豆奶</td><td>4.0</td><td>3.3</td><td>2.1</td><td>2.9</td><td></td><td></td><td>710.5</td></tr><tr><td>5</td><td>四</td><td>培根奶油<br>義大利麵</td><td>照燒雞腿</td><td>金菇燴青花</td><td>有機荷葉白菜</td><td>冬瓜海芽湯</td><td></td><td>5.5</td><td>2.2</td><td>2.6</td><td>2.6</td><td></td><td></td><td>732.0</td></tr><tr><td>6</td><td>五</td><td>糙米飯</td><td>糖醋魚片</td><td>薑絲南瓜</td><td>TAP小白菜</td><td>薏仁蓮子肉絲湯</td><td></td><td>5.2</td><td>3.1</td><td>1.3</td><td>2.6</td><td></td><td></td><td>746.0</td></tr><tr><td>9</td><td>一</td><td>紫米飯</td><td>梅干燉肉</td><td>高麗寬粉</td><td>有機山東大白菜</td><td>紅豆粉圓豆花</td><td></td><td>6.3</td><td>2.1</td><td>1.6</td><td>2.5</td><td></td><td></td><td>751.0</td></tr><tr><td>10</td><td>二</td><td>糙米飯</td><td>麻油雞</td><td>三色干丁</td><td>有機小白菜</td><td>金菇蛋花湯</td><td>水果</td><td>4.4</td><td>3.5</td><td>1.8</td><td>2.4</td><td>1.0</td><td></td><td>783.5</td></tr><tr><td>11</td><td>三</td><td>胚芽飯</td><td>馬鈴薯肉片</td><td>醋拌豆芽甜椒</td><td>TAP油菜</td><td>柴魚海結湯</td><td></td><td>4.3</td><td>2.1</td><td>2.3</td><td>2.6</td><td></td><td></td><td>633.0</td></tr><tr><td>12</td><td>四</td><td>金瓜米粉</td><td>烤雞排</td><td>芝麻鮮菇</td><td>有機山茼蒿</td><td>酸辣湯</td><td>牛奶</td><td>2.1</td><td>2.2</td><td>2.6</td><td>2.5</td><td></td><td>0.8</td><td>609.5</td></tr><tr><td>13</td><td>五</td><td>糙米飯</td><td>番茄燒雞</td><td>黃瓜豆腸</td><td>TAP蚵白菜</td><td>南瓜洋蔥湯</td><td></td><td>4.4</td><td>3.8</td><td>2.1</td><td>2.3</td><td></td><td></td><td>749.0</td></tr><tr><td>16</td><td>一</td><td>糙米飯</td><td>油腐燒肉</td><td>紅蘿高麗</td><td>有機油江菜</td><td>玉米濃湯</td><td>水果</td><td>4.3</td><td>2.7</td><td>2.0</td><td>2.4</td><td>1.0</td><td></td><td>721.5</td></tr><tr><td>17</td><td>二</td><td>燕麥飯</td><td>黃瓜豬柳</td><td>塔香杏鮑菇</td><td>有機福山萵苣</td><td>鳳梨苦瓜雞湯</td><td></td><td>4.0</td><td>3.1</td><td>1.7</td><td>2.9</td><td></td><td></td><td>685.5</td></tr><tr><td>18</td><td>三</td><td>地瓜飯</td><td>炸魚片</td><td>麻婆豆腐</td><td>TAP青江菜</td><td>紅棗冬瓜薏仁湯</td><td>優酪乳</td><td>4.4</td><td>4.0</td><td>1.1</td><td>2.6</td><td></td><td>0.5</td><td>827.5</td></tr><tr><td>19</td><td>四</td><td>茄汁蛋炒飯</td><td>雙椒炒嫩雞</td><td>紅燒什錦</td><td>有機A菜</td><td>高纖蔬菜湯</td><td></td><td>3.5</td><td>3.0</td><td>2.7</td><td>2.6</td><td></td><td></td><td>654.5</td></tr><tr><td>20</td><td>五</td><td>糙米飯</td><td>南瓜蒸肉</td><td>皮蛋地瓜葉</td><td>TAP小白菜</td><td>三菇湯</td><td></td><td>4.4</td><td>2.4</td><td>2.0</td><td>2.4</td><td></td><td></td><td>646.0</td></tr><tr><td>23</td><td>一</td><td>薏仁飯</td><td>味噌烤魚塊</td><td>洋蔥炒蛋</td><td>有機白松菜</td><td>白菜什錦湯</td><td></td><td>4.0</td><td>4.2</td><td>1.6</td><td>2.4</td><td></td><td></td><td>743.0</td></tr><tr><td>24</td><td>二</td><td>紫米飯</td><td>檸檬烤雞排</td><td>南瓜炒青花</td><td>有機荷葉白菜</td><td>四神肉絲湯</td><td>水果</td><td>4.7</td><td>2.3</td><td>1.9</td><td>2.6</td><td>1.0</td><td></td><td>726.0</td></tr><tr><td>25</td><td>三</td><td>糙米飯</td><td>蔥香肉片</td><td>芋丁三色</td><td>TAP菠菜</td><td>羅宋湯</td><td></td><td>4.8</td><td>2.1</td><td>2.1</td><td>2.6</td><td></td><td></td><td>663.0</td></tr><tr><td>26</td><td>四</td><td>什錦烏龍麵</td><td>鹹水雞</td><td>番茄炒蛋</td><td>有機福山萵苣</td><td>紅豆麥片湯</td><td>豆奶</td><td>3.6</td><td>4.5</td><td>2.3</td><td>2.6</td><td></td><td></td><td>764.0</td></tr><tr><td>27</td><td>五</td><td>胚芽飯</td><td>京醬肉絲</td><td>家常豆腐</td><td>TAP油菜</td><td>大滷湯</td><td></td><td>3.5</td><td>3.2</td><td>1.8</td><td>2.3</td><td></td><td></td><td>633.5</td></tr><tr><td>30</td><td>一</td><td>糙米飯</td><td>洋蔥炒肉片</td><td>雙椒炒青花</td><td>有機黑葉白菜</td><td>薑絲冬瓜湯</td><td>水果</td><td>4.0</td><td>2.1</td><td>2.5</td><td>3.4</td><td>1.0</td><td></td><td>713.0</td></tr><tr><td>31</td><td>二</td><td>肉醬義大<br>利麵</td><td>香草烤雞腿<br>排</td><td>炒三蔬</td><td>有機油江菜</td><td>薺菜魚丸湯</td><td></td><td>2.8</td><td>2.8</td><td>2.4</td><td>2.9</td><td></td><td></td><td>596.5</td></tr></tbody></table></body></html>`;
+
+    const aprilMenuStr = `<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><title>115年04月份營養午餐菜單</title><style> body { font-family: "Microsoft JhengHei", sans-serif; } h2 { text-align: left; margin-bottom: 5px; } table { border-collapse: collapse; width: 100%; text-align: center; font-size: 14px; } th, td { border: 1px solid black; padding: 6px 4px; } th { background-color: #f9f9f9; } .thick-border-top { border-top: 2px solid black; } </style></head><body><h2>115年04月份營養午餐菜單</h2><table><thead class="thick-border-top"><tr><th rowspan="2">日期</th><th rowspan="2">星期</th><th rowspan="2">主食</th><th rowspan="2">主菜</th><th rowspan="2">副菜</th><th rowspan="2">青菜</th><th rowspan="2">湯品</th><th rowspan="2">水果/<br>鮮奶</th><th>全穀<br>雜糧</th><th>豆魚<br>蛋肉</th><th>蔬菜</th><th>油脂</th><th>水果</th><th>奶類</th><th>熱量</th></tr><tr><th colspan="6">份</th><th>仟卡</th></tr></thead><tbody><tr><td>1</td><td>三</td><td>紫米飯</td><td>豆豉蒸魚</td><td>三杯竹筍杏鮑菇</td><td>TAP小白菜</td><td>四神瘦肉湯</td><td>牛奶</td><td>4.3</td><td>3.3</td><td>2.0</td><td>2.2</td><td></td><td>0.8</td><td>817.5</td></tr><tr><td>2</td><td>四</td><td>薏仁飯</td><td>蜜汁燒雞</td><td>毛豆炒蛋</td><td>有機荷葉白菜</td><td>羅宋湯</td><td></td><td>4.5</td><td>4.0</td><td>1.6</td><td>2.8</td><td></td><td></td><td>781.0</td></tr><tr><td>7</td><td>二</td><td>糙米飯</td><td>醬爆雞丁</td><td>木須青江</td><td>有機小白菜</td><td>義式番茄蘑菇濃湯</td><td>水果</td><td>4.1</td><td>2.7</td><td>2.8</td><td>2.8</td><td>1.0</td><td></td><td>745.5</td></tr><tr><td>8</td><td>三</td><td>五穀飯</td><td>芋香燒肉</td><td>西芹油腐</td><td>TAP福山萵苣</td><td>鮮菇南瓜雞湯</td><td></td><td>5.1</td><td>3.2</td><td>1.7</td><td>2.3</td><td></td><td></td><td>743.0</td></tr><tr><td>9</td><td>四</td><td>茄汁蛋炒飯</td><td>味噌烤魚</td><td>翠炒洋芋</td><td>有機高麗菜</td><td>綠豆豆花</td><td>優酪乳</td><td>4.8</td><td>3.6</td><td>1.6</td><td>2.6</td><td></td><td>0.5</td><td>838.0</td></tr><tr><td>10</td><td>五</td><td>燕麥飯</td><td>炸雞腿排</td><td>芋香三色</td><td>TAP油菜</td><td>薑絲黃瓜湯</td><td></td><td>5.1</td><td>3.1</td><td>1.1</td><td>2.4</td><td></td><td></td><td>725.0</td></tr><tr><td>13</td><td>一</td><td>糙米飯</td><td>香草魚片</td><td>日式蒸蛋</td><td>有機黑葉白菜</td><td>三菇雞湯</td><td>水果</td><td>4.0</td><td>4.1</td><td>1.6</td><td>2.7</td><td>1.0</td><td></td><td>809.0</td></tr><tr><td>14</td><td>二</td><td>胚芽飯</td><td>雞肉治部煮</td><td>田園什錦</td><td>有機味美菜</td><td>南瓜濃湯</td><td></td><td>4.0</td><td>3.5</td><td>2.3</td><td>2.3</td><td></td><td></td><td>703.5</td></tr><tr><td>15</td><td>三</td><td>薏仁飯</td><td>蒜泥白肉</td><td>淡煮風味茄子</td><td>TAP蚵白菜</td><td>味噌豆腐湯</td><td>豆奶</td><td>4.0</td><td>3.3</td><td>2.3</td><td>2.5</td><td></td><td></td><td>697.5</td></tr><tr><td>16</td><td>四</td><td>紅藜小米飯</td><td>鹽烤豬肉</td><td>炒三絲</td><td>有機白松菜</td><td>芋頭西米露</td><td></td><td>5.3</td><td>2.6</td><td>1.7</td><td>2.6</td><td></td><td></td><td>725.5</td></tr><tr><td>17</td><td>五</td><td>糙米飯</td><td>洋蔥胡蘿蔔滷肉</td><td>蔥燒豆腐</td><td>TAP青江菜</td><td>番茄黃豆芽湯</td><td></td><td>4.0</td><td>3.0</td><td>1.8</td><td>2.7</td><td></td><td></td><td>671.5</td></tr><tr><td>20</td><td>一</td><td>紫米飯</td><td>貴妃雞丁</td><td>三色干丁</td><td>有機高麗菜</td><td>海帶蘿蔔湯</td><td></td><td>4.4</td><td>3.2</td><td>1.8</td><td>2.5</td><td></td><td></td><td>705.5</td></tr><tr><td>21</td><td>二</td><td>糙米飯</td><td>滑蛋肉片</td><td>金菇燴青花</td><td>有機山菠菜</td><td>羅宋湯</td><td>水果</td><td>4.0</td><td>2.3</td><td>2.5</td><td>2.5</td><td>1.0</td><td></td><td>687.5</td></tr><tr><td>22</td><td>三</td><td>南瓜飯</td><td>奶香洋芋雞</td><td>豆薯三色</td><td>TAP福山萵苣</td><td>薏仁蓮子湯</td><td></td><td>4.7</td><td>2.8</td><td>1.5</td><td>2.3</td><td></td><td></td><td>680.0</td></tr><tr><td>23</td><td>四</td><td>炒烏龍麵</td><td>照燒雞腿</td><td>茄子甜條</td><td>有機小白菜</td><td>金菇白菜湯</td><td>牛奶</td><td>2.4</td><td>1.8</td><td>2.3</td><td>3.0</td><td></td><td>0.8</td><td>615.5</td></tr><tr><td>24</td><td>五</td><td>五穀飯</td><td>蔥燒魚片</td><td>香菇蘿蔔豆腐</td><td>TAP油菜</td><td>蛋花貢丸湯</td><td></td><td>4.0</td><td>4.3</td><td>1.7</td><td>2.3</td><td></td><td></td><td>748.5</td></tr><tr><td>27</td><td>一</td><td>糙米飯</td><td>茄汁雞腿排</td><td>紅絲豆包</td><td>有機味美菜</td><td>蘿蔔海結排骨湯</td><td>水果</td><td>4.0</td><td>3.1</td><td>1.8</td><td>2.5</td><td>1.0</td><td></td><td>730.0</td></tr><tr><td>28</td><td>二</td><td>胚芽飯</td><td>冬瓜燒肉</td><td>紅燒什錦</td><td>有機荷葉白菜</td><td>玉米濃湯</td><td></td><td>3.8</td><td>2.4</td><td>2.2</td><td>2.8</td><td></td><td></td><td>627.0</td></tr><tr><td>29</td><td>三</td><td>薏仁飯</td><td>蔥燒魚丁</td><td>和風炸豆腐</td><td>TAP蚵白菜</td><td>冬瓜海芽湯</td><td>優酪乳</td><td>4.0</td><td>3.4</td><td>1.6</td><td>2.9</td><td></td><td>0.5</td><td>780.5</td></tr><tr><td>30</td><td>四</td><td>地瓜飯</td><td>紅燒豬柳</td><td>芙蓉蒸蛋</td><td>有機青松菜</td><td>豆腐羹</td><td></td><td>3.7</td><td>3.4</td><td>1.6</td><td>3.4</td><td></td><td></td><td>707.0</td></tr></tbody></table></body></html>`;
+
+    // 5月與6月的預設內容，拿到正式資料後請替換這裡的字串
+    const mayMenuStr = `<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><style> body { font-family: "Microsoft JhengHei", sans-serif; text-align: center; padding: 20px;} </style></head><body><h2>5月份營養午餐菜單</h2><p style="font-size: 20px;">請在此處替換為5月份的 HTML 表格內容</p></body></html>`;
+    
+    const juneMenuStr = `<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><style> body { font-family: "Microsoft JhengHei", sans-serif; text-align: center; padding: 20px;} </style></head><body><h2>6月份營養午餐菜單</h2><p style="font-size: 20px;">請在此處替換為6月份的 HTML 表格內容</p></body></html>`;
+
+    // --- 彈窗開關控制 ---
+    function openMenu(event, month) {
+        event.stopPropagation(); // 防止觸發語音朗讀
+        const modal = document.getElementById('menuModal');
+        const iframe = document.getElementById('menuIframe');
+        const title = document.getElementById('modalTitle');
+
+        let htmlContent = '';
+        
+        // 根據月份切換對應的菜單字串
+        switch(month) {
+            case '3':
+                htmlContent = marchMenuStr;
+                break;
+            case '4':
+                htmlContent = aprilMenuStr;
+                break;
+            case '5':
+                htmlContent = mayMenuStr;
+                break;
+            case '6':
+                htmlContent = juneMenuStr;
+                break;
+            default:
+                htmlContent = '<h3>找不到菜單資料</h3>';
+        }
+
+        title.innerText = month + '月份營養午餐菜單';
+
+        // 將 HTML 字串轉換為 Blob，避免裡面的 CSS 污染外層課表
+        const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+        iframe.src = URL.createObjectURL(blob);
+
+        modal.style.display = 'flex';
+    }
+
+    function closeMenu(event) {
+        if (event) event.stopPropagation();
+        const modal = document.getElementById('menuModal');
+        const iframe = document.getElementById('menuIframe');
+        
+        modal.style.display = 'none';
+        iframe.src = ''; // 清空 iframe 釋放記憶體
+    }
+
+    // --- 1. 初始化指針時鐘 ---
+    const clockFace = document.getElementById('analogClock');
+    
+    for (let i = 1; i <= 12; i++) {
+        const number = document.createElement('div');
+        number.className = 'clock-number';
+        number.innerText = i;
+        const rotation = i * 30;
+        // 配合縮小後的時鐘尺寸，調整半徑位移 (-7vh)
+        number.style.transform = `rotate(${rotation}deg) translate(0, -7vh) rotate(-${rotation}deg)`;
+        number.style.top = '50%';
+        number.style.left = '50%';
+        number.style.marginTop = '-1vh';
+        number.style.marginLeft = '-1vh'; 
+        number.style.width = '2vh';
+        number.style.height = '2vh';
+        clockFace.appendChild(number);
+    }
+
+    // --- 2. 時間更新 ---
+    function updateTime() {
+        const now = new Date();
+        document.getElementById('digitalClock').innerText = now.toLocaleTimeString('en-US', { hour12: false });
+
+        const months = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
+        const days = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
+        document.getElementById('calMonth').innerText = months[now.getMonth()];
+        document.getElementById('calDate').innerText = now.getDate();
+        document.getElementById('calDay').innerText = days[now.getDay()];
+
+        const seconds = now.getSeconds();
+        const mins = now.getMinutes();
+        const hour = now.getHours();
+
+        const secDeg = ((seconds / 60) * 360);
+        const minDeg = ((mins / 60) * 360) + ((seconds/60)*6);
+        const hourDeg = ((hour / 12) * 360) + ((mins/60)*30);
+
+        document.getElementById('secHand').style.transform = `translateX(-50%) rotate(${secDeg}deg)`;
+        document.getElementById('minHand').style.transform = `translateX(-50%) rotate(${minDeg}deg)`;
+        document.getElementById('hourHand').style.transform = `translateX(-50%) rotate(${hourDeg}deg)`;
+    }
+
+    // --- 3. 智慧高亮 ---
+    function highlightToday() {
+        const now = new Date();
+        const day = now.getDay(); 
+        if (day >= 1 && day <= 5) {
+            const targetIndex = day + 2;
+            const th = document.querySelector(`thead th:nth-child(${targetIndex})`);
+            if (th) th.classList.add('current-day');
+            const tds = document.querySelectorAll(`tbody td:nth-child(${targetIndex})`);
+            tds.forEach(td => td.classList.add('current-day'));
+        }
+    }
+
+    // --- 4. 點擊朗讀 ---
+    function enableSpeech() {
+        const cells = document.querySelectorAll('tbody td');
+        cells.forEach(cell => {
+            cell.addEventListener('click', (e) => {
+                // 如果點擊的是按鈕或彈窗連結，則跳過語音
+                if (e.target.tagName.toLowerCase() === 'button') return;
+
+                // 過濾掉 3、4、5、6 月的按鈕文字
+                let textToSpeak = cell.innerText.replace(/[3456]月菜單/g, ''); 
+                if (!textToSpeak.trim()) return;
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(textToSpeak);
+                utterance.lang = 'zh-TW'; 
+                utterance.rate = 1; 
+                window.speechSynthesis.speak(utterance);
+            });
+        });
+    }
+
+    // --- 5. 變暗開關邏輯 ---
+    function toggleDimmer() {
+        const overlay = document.getElementById('dimmer-overlay');
+        const btn = document.querySelector('.dimmer-btn');
+        
+        // 切換 active 樣式
+        if (overlay.classList.contains('active')) {
+            overlay.classList.remove('active');
+            btn.innerText = '🌙'; // 恢復成月亮
+            btn.style.background = '#333';
+        } else {
+            overlay.classList.add('active');
+            btn.innerText = '☀️'; // 變成太陽
+            btn.style.background = '#f5a623'; // 按鈕變亮
+        }
+    }
+
+    setInterval(updateTime, 1000); 
+    updateTime(); 
+    highlightToday(); 
+    enableSpeech(); 
+
+</script>
+</body>
+</html>
