@@ -207,7 +207,7 @@
         left: 0;
         width: 100%;
         height: 100%;
-        background-color: rgba(0, 0, 0, 0.85); /* 85% 黑 */
+        background-color: rgba(0, 0, 0, 0.95); /* 修正：95% 黑 */
         z-index: 9999; /* 比按鈕低，但比內容高 */
         opacity: 0; /* 預設隱藏 */
         pointer-events: none; /* 隱藏時允許點擊穿透 */
@@ -457,8 +457,8 @@
         </div>
 
         <div class="widget music-widget">
-            <iframe 
-                src="https://www.youtube.com/embed/videoseries?list=PL73NRWQl0Tm0qYgcgl0L9-2BNNMxqRqs4&autoplay=1&loop=1" 
+            <iframe id="ytIframe"
+                src="https://www.youtube.com/embed/videoseries?list=PL73NRWQl0Tm0qYgcgl0L9-2BNNMxqRqs4" 
                 title="YouTube music player" 
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
                 allowfullscreen>
@@ -542,7 +542,7 @@
         clockFace.appendChild(number);
     }
 
-    // --- 2. 時間更新 ---
+    // --- 2. 時間更新與自動播放邏輯 ---
     function updateTime() {
         const now = new Date();
         document.getElementById('digitalClock').innerText = now.toLocaleTimeString('en-US', { hour12: false });
@@ -564,6 +564,13 @@
         document.getElementById('secHand').style.transform = `translateX(-50%) rotate(${secDeg}deg)`;
         document.getElementById('minHand').style.transform = `translateX(-50%) rotate(${minDeg}deg)`;
         document.getElementById('hourHand').style.transform = `translateX(-50%) rotate(${hourDeg}deg)`;
+
+        // === 新增：每天 12:29 自動播放 YouTube 播放清單的第 3 首歌 ===
+        if (hour === 12 && mins === 29 && seconds === 0) {
+            const ytIframe = document.getElementById('ytIframe');
+            // 替換 src 加上 &index=3 (第3首歌) 以及 &autoplay=1 (自動播放)
+            ytIframe.src = "https://www.youtube.com/embed/videoseries?list=PL73NRWQl0Tm0qYgcgl0L9-2BNNMxqRqs4&index=3&autoplay=1";
+        }
     }
 
     // --- 3. 智慧高亮 ---
