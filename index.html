@@ -2,9 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>全螢幕智慧語音課表</title>
 <style>
     :root {
@@ -18,23 +16,21 @@
         --highlight-border: #f5a623;
     }
 
-    /* 全局設定：強制不捲動與支援動態視窗高度 (dvh) */
+    /* 全局設定：強制不捲動 */
     html, body {
         height: 100%;
-        height: 100dvh; /* 避免平板瀏覽器網址列造成的垂直捲軸 */
         margin: 0;
         padding: 0;
-        overflow: hidden; 
+        overflow: hidden; /* 隱藏捲軸 */
         font-family: "Microsoft JhengHei", "Heiti TC", sans-serif;
         background-color: #f4f4f4;
-        touch-action: none; /* 禁用雙指縮放與滑動重整，確保純粹的觸控體驗 */
     }
 
     body {
         display: flex;
         justify-content: center;
         align-items: center;
-        padding: 1dvh 1vw;
+        padding: 1vh 1vw;
         box-sizing: border-box;
     }
 
@@ -43,7 +39,7 @@
         display: flex;
         gap: 1vw;
         width: 100%;
-        height: 98dvh;
+        height: 98vh;
         max-width: 100%;
     }
 
@@ -56,18 +52,17 @@
         display: flex;
         flex-direction: column;
         overflow: hidden;
-        min-width: 0; /* 避免 flex 子元素撐破容器 */
     }
 
     .schedule-header {
         background-color: var(--header-bg);
         color: var(--header-text);
-        padding: 1dvh;
+        padding: 1vh;
         text-align: center;
         flex-shrink: 0;
     }
 
-    .schedule-header h1 { margin: 0; font-size: 2.5vmin; }
+    .schedule-header h1 { margin: 0; font-size: 2.5vh; }
 
     table {
         width: 100%;
@@ -80,7 +75,7 @@
     th, td {
         border-bottom: 3px solid var(--border-color);
         border-right: 1px solid var(--border-color);
-        font-size: 2.5vmin; /* 改用 vmin 讓字體適應平板比例 */
+        font-size: 2.9vh;
         vertical-align: middle;
         word-wrap: break-word;
         padding: 0px;
@@ -88,8 +83,8 @@
     }
     
     tr { height: 10%; } 
-    th:first-child { width: 4%; }
-    th:nth-child(2) { width: 10%; }
+    th:first-child { width: 3%; }
+    th:nth-child(2) { width: 8%; }
 
     thead th {
         background-color: #f8f9fa;
@@ -99,7 +94,7 @@
     }
 
     .period-col { font-weight: bold; color: #4a90e2; background-color: #fafafa; }
-    .time-col { font-size: 1.5vmin; color: #888; background-color: #fafafa; }
+    .time-col { font-size: 1.5vh; color: #888; background-color: #fafafa; }
     
     td:active { background-color: #ffe082 !important; transform: scale(0.98); }
     th.current-day { background-color: var(--highlight-header) !important; color: white !important; }
@@ -110,15 +105,14 @@
         flex: 1;
         display: flex;
         flex-direction: column;
-        gap: 0.5dvh;
+        gap: 0.1vh;
         height: 100%;
-        min-width: 0;
     }
 
     .widget {
         background: white;
         border-radius: 12px;
-        padding: 1vmin;
+        padding: 1vh;
         box-shadow: 0 4px 10px rgba(0,0,0,0.05);
         display: flex;
         flex-direction: column;
@@ -126,11 +120,11 @@
         justify-content: center;
         width: 100%;
         box-sizing: border-box;
-        min-height: 0; /* 確保 iframe 不會超出 widget 範圍 */
     }
 
-    .calendar-widget { flex: 0.5; justify-content: space-evenly; }
-    .dynalist-widget { flex: 3; padding: 0; } 
+    /* 重新微調比例，讓時鐘有足夠的容納空間，同時維持筆記最大化 */
+    .calendar-widget { flex: 0.8; justify-content: space-evenly; }
+    .dynalist-widget { flex: 2.8; padding: 0vh; } 
     .music-widget { flex: 1.2; }
 
     /* 日曆與時鐘整合區塊樣式 */
@@ -146,38 +140,49 @@
         align-items: center;
     }
 
-    .cal-month { font-size: 1.8vmin; color: #888; }
-    .cal-date { font-size: 4vmin; font-weight: bold; color: #333; line-height: 1; margin: 0.5dvh 0; }
-    .cal-day { font-size: 1.8vmin; color: var(--header-bg); font-weight: bold; background: #eef6ff; padding: 0.4vmin 1.5vmin; border-radius: 20px;}
+    .cal-month { font-size: 1.8vh; color: #888; }
+    .cal-date { font-size: 4.5vh; font-weight: bold; color: #333; line-height: 1; margin: 0.5vh 0; }
+    .cal-day { font-size: 2vh; color: var(--header-bg); font-weight: bold; background: #eef6ff; padding: 0.4vh 1.5vh; border-radius: 20px;}
 
     .digital-clock {
         font-family: 'Courier New', Courier, monospace;
-        font-size: 2.8vmin;
+        font-size: 3.5vh;
         font-weight: bold;
         color: #333;
         background: #f0f0f0;
-        padding: 0.8vmin 1.5vmin;
+        padding: 0.8vh 1.5vh;
         border-radius: 8px;
     }
 
-    /* 指針時鐘改用 vmin 維持完美圓形 */
+    /* 指針時鐘更新為更穩定的百分比自適應寫法 */
     .clock-face {
-        width: 15vmin;
-        height: 15vmin;
-        border: 0.6vmin solid #333;
+        width: 13vh;
+        height: 13vh;
+        border: 0.4vh solid #333;
         border-radius: 50%;
         position: relative;
         background: white;
+        flex-shrink: 0;
+        margin-top: 0.5vh;
     }
     .clock-number {
-        position: absolute; width: 100%; height: 100%; text-align: center; 
-        font-weight: bold; font-size: 1.5vmin; color: #333;
+        position: absolute; 
+        width: 100%; 
+        height: 100%; 
+        text-align: center; 
+        font-weight: bold; 
+        font-size: 1.8vh; 
+        color: #333;
+        top: 0;
+        left: 0;
+        padding-top: 0.2vh; 
+        box-sizing: border-box;
     }
     .hand { position: absolute; bottom: 50%; left: 50%; transform-origin: bottom; background: #333; transform: translateX(-50%); z-index: 2; border-radius: 4px;}
-    .hour-hand { width: 0.6vmin; height: 4vmin; }
-    .min-hand { width: 0.4vmin; height: 6vmin; background: #666; }
-    .sec-hand { width: 0.2vmin; height: 7vmin; background: red; z-index: 3;}
-    .center-dot { width: 1.2vmin; height: 1.2vmin; background: #333; border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 4; position: absolute;}
+    .hour-hand { width: 0.6vh; height: 25%; }
+    .min-hand { width: 0.4vh; height: 35%; background: #666; }
+    .sec-hand { width: 0.2vh; height: 42%; background: red; z-index: 3;}
+    .center-dot { width: 1.2vh; height: 1.2vh; background: #333; border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 4; position: absolute;}
 
     /* 外部網頁與音樂樣式 */
     .dynalist-widget iframe { width: 100%; height: 100%; border-radius: 2px; border: none; }
@@ -186,17 +191,17 @@
     /* --- 變暗遮罩與按鈕樣式 --- */
     .dimmer-btn {
         position: fixed;
-        bottom: 2dvh;
-        right: 2vw;
-        width: 6vmin;
-        height: 6vmin;
+        bottom: 2vh;
+        right: 2vh;
+        width: 6vh;
+        height: 6vh;
         border-radius: 50%;
         background-color: #333;
         color: white;
         border: none;
-        font-size: 3vmin;
+        font-size: 3vh;
         cursor: pointer;
-        z-index: 10000;
+        z-index: 10000; 
         box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         display: flex;
         align-items: center;
@@ -211,51 +216,56 @@
         left: 0;
         width: 100%;
         height: 100%;
-        background-color: rgba(0, 0, 0, 0.95);
-        z-index: 9999;
-        opacity: 0;
-        pointer-events: none;
+        background-color: rgba(0, 0, 0, 0.95); 
+        z-index: 9999; 
+        opacity: 0; 
+        pointer-events: none; 
         transition: opacity 0.5s ease;
         display: flex;
         justify-content: center;
         align-items: center;
         color: #555;
-        font-size: 4vmin;
+        font-size: 3vh;
         user-select: none;
     }
     
     #dimmer-overlay.active {
         opacity: 1;
-        pointer-events: all;
+        pointer-events: all; 
     }
 
     /* --- 菜單按鈕與彈窗樣式 --- */
     .menu-btn-group {
         display: inline-block;
-        margin-left: 2vw;
+        margin-left: 3vh;
     }
     .menu-btn {
         background-color: #fff;
         color: var(--header-bg);
         border: 2px solid var(--header-bg);
-        padding: 0.5dvh 1vw;
+        padding: 0.5vh 1.5vh;
         border-radius: 20px;
-        font-size: 1.8vmin;
+        font-size: 2vh;
         font-weight: bold;
         cursor: pointer;
-        margin: 0 0.2vw;
+        margin: 0 0.5vh;
         box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         transition: all 0.2s;
     }
-    .menu-btn:hover { background-color: var(--header-bg); color: white; }
-    .menu-btn:active { transform: scale(0.95); }
+    .menu-btn:hover {
+        background-color: var(--header-bg);
+        color: white;
+    }
+    .menu-btn:active {
+        transform: scale(0.95);
+    }
 
     .modal-overlay {
-        display: none;
+        display: none; 
         position: fixed;
         top: 0; left: 0; width: 100%; height: 100%;
         background: rgba(0, 0, 0, 0.6);
-        z-index: 10001;
+        z-index: 10001; 
         justify-content: center;
         align-items: center;
         backdrop-filter: blur(3px);
@@ -264,7 +274,7 @@
     .modal-content {
         background: white;
         width: 85vw;
-        height: 85dvh;
+        height: 85vh;
         border-radius: 12px;
         display: flex;
         flex-direction: column;
@@ -281,34 +291,31 @@
     .modal-header {
         background-color: var(--highlight-header);
         color: white;
-        padding: 1.5dvh 2vw;
+        padding: 1.5vh 2vw;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        font-size: 2.5vmin;
+        font-size: 2.5vh;
         font-weight: bold;
     }
 
-    .close-btn { cursor: pointer; font-size: 4vmin; line-height: 1; }
+    .close-btn {
+        cursor: pointer;
+        font-size: 4vh;
+        line-height: 1;
+    }
     .close-btn:hover { color: #ffe082; }
-    .modal-body { flex: 1; padding: 0; background: #f9f9f9; }
-    .modal-body iframe { width: 100%; height: 100%; border: none; }
 
-    /* --- 平板直立方向 (Portrait) 響應式配置 --- */
-    @media screen and (orientation: portrait) {
-        .main-layout {
-            flex-direction: column;
-        }
-        .schedule-container {
-            flex: 2.5; /* 讓課表佔據上方大部分空間 */
-        }
-        .sidebar {
-            flex: 1;
-            flex-direction: row; /* 將小工具改成橫向並排 */
-        }
-        .widget {
-            flex: 1;
-        }
+    .modal-body {
+        flex: 1;
+        padding: 0;
+        background: #f9f9f9;
+    }
+    
+    .modal-body iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
     }
 
 </style>
@@ -507,25 +514,25 @@
         const iframe = document.getElementById('menuIframe');
         
         modal.style.display = 'none';
-        iframe.src = '';
+        iframe.src = ''; 
     }
 
-    // --- 1. 初始化指針時鐘 (改用 vmin 單位) ---
+    // --- 1. 初始化指針時鐘 ---
     const clockFace = document.getElementById('analogClock');
     
+    // 全新自適應寫法，完全擺脫固定數值的擠壓問題
     for (let i = 1; i <= 12; i++) {
         const number = document.createElement('div');
         number.className = 'clock-number';
-        number.innerText = i;
-        const rotation = i * 30;
-        // 配合響應式的 vmin 單位進行半徑位移
-        number.style.transform = `rotate(${rotation}deg) translate(0, -6vmin) rotate(-${rotation}deg)`;
-        number.style.top = '50%';
-        number.style.left = '50%';
-        number.style.marginTop = '-1vmin';
-        number.style.marginLeft = '-1vmin'; 
-        number.style.width = '2vmin';
-        number.style.height = '2vmin';
+        
+        // 使用 span 裝載文字，以便將文字轉正
+        const span = document.createElement('span');
+        span.innerText = i;
+        span.style.display = 'inline-block';
+        span.style.transform = `rotate(-${i * 30}deg)`; 
+        
+        number.style.transform = `rotate(${i * 30}deg)`; 
+        number.appendChild(span);
         clockFace.appendChild(number);
     }
 
