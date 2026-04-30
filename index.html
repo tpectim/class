@@ -2,6 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
+<!-- 鎖定縮放比例、禁止使用者雙擊/雙指放大，並支援全螢幕瀏海 -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>全螢幕智慧語音課表</title>
 <style>
@@ -61,15 +62,50 @@
         overflow: hidden;
     }
 
+    /* 更新：標題列佈局（加入縮放按鈕） */
     .schedule-header {
         background-color: var(--header-bg);
         color: var(--header-text);
         padding: 1vh;
-        text-align: center;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative; /* 讓按鈕可以絕對定位在右側 */
         flex-shrink: 0;
     }
 
     .schedule-header h1 { margin: 0; font-size: 2.5vh; }
+
+    /* 縮放按鈕樣式 */
+    .zoom-controls {
+        position: absolute;
+        right: 2vw;
+        display: flex;
+        gap: 0.5vw;
+    }
+
+    .zoom-btn {
+        background-color: #fff;
+        color: var(--header-bg);
+        border: none;
+        border-radius: 8px;
+        width: 4vh;
+        height: 4vh;
+        font-size: 3vh;
+        font-weight: bold;
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        transition: transform 0.1s, background-color 0.2s;
+        user-select: none; /* 避免連點時反白 */
+    }
+
+    .zoom-btn:active {
+        transform: scale(0.9);
+        background-color: #e0e0e0;
+    }
 
     table {
         width: 100%;
@@ -345,8 +381,13 @@
 
 <div class="main-layout">
     <div class="schedule-container">
+        <!-- 這裡加入了縮放按鈕 -->
         <div class="schedule-header">
             <h1>高職部101班 課程表</h1>
+            <div class="zoom-controls">
+                <button class="zoom-btn" onclick="changeZoom(0.05)" title="放大畫面">+</button>
+                <button class="zoom-btn" onclick="changeZoom(-0.05)" title="縮小畫面">-</button>
+            </div>
         </div>
         <table id="scheduleTable">
             <thead>
@@ -488,6 +529,19 @@
     
     const juneMenuStr = `<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><style> body { font-family: "Microsoft JhengHei", sans-serif; text-align: center; padding: 20px;} </style></head><body><h2>6月份營養午餐菜單</h2><p style="font-size: 20px;">請在此處替換為6月份的 HTML 表格內容</p></body></html>`;
 
+    // --- 新增：畫面縮放邏輯 ---
+    let currentZoom = 1;
+    function changeZoom(step) {
+        currentZoom += step;
+        
+        // 限制縮放範圍，避免畫面過大或過小（0.6倍 到 1.8倍）
+        if (currentZoom < 0.6) currentZoom = 0.6;
+        if (currentZoom > 1.8) currentZoom = 1.8;
+        
+        // 應用縮放至整個 body
+        document.body.style.zoom = currentZoom;
+    }
+
     // --- 彈窗開關控制 ---
     function openMenu(event, month) {
         event.stopPropagation();
@@ -586,6 +640,7 @@
         const cells = document.querySelectorAll('tbody td');
         cells.forEach(cell => {
             cell.addEventListener('click', (e) => {
+                // 點擊按鈕時不觸發朗讀
                 if (e.target.tagName.toLowerCase() === 'button') return;
 
                 let textToSpeak = cell.innerText.replace(/[3456]月菜單/g, ''); 
